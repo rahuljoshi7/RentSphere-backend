@@ -108,18 +108,4 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
----
-spring:
-  config:
-    activate:
-      on-profile: prod
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-
-logging:
-  level:
-    com.rentsphere: INFO
-    root: WARN
