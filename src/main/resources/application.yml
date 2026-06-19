@@ -1,0 +1,125 @@
+spring:
+  application:
+    name: rentsphere
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/rentsphere}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:"@Rahul19"}
+    driver-class-name: org.postgresql.Driver
+
+    hikari:
+      pool-name: RentSpherePool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_batch_fetch_size: 20
+        jdbc:
+          batch_size: 25
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:rahulmjoshi0007@gmail.com}
+    password: ${MAIL_PASSWORD:oljz njiw wgul irna}
+
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+server:
+  port: ${PORT:9090}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dGhpc0lzQVN1cGVyU2VjdXJlSldUU2VjcmV0S2V5Rm9yUmVudFNwaGVyZTIwMjY=}
+    expiration-ms: 86400000
+    refresh-expiration-ms: 604800000
+
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:dummy-cloud}
+    api-key: ${CLOUDINARY_API_KEY:dummy-key}
+    api-secret: ${CLOUDINARY_API_SECRET:dummy-secret}
+
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+  mail:
+    from: ${MAIL_FROM:noreply@rentsphere.com}
+    from-name: RentSphere
+
+  pagination:
+    default-page-size: 10
+    max-page-size: 100
+
+  scheduler:
+    rent-reminder-cron: "0 0 9 1 * ?"
+    overdue-check-cron: "0 0 0 * * ?"
+    agreement-expiry-cron: "0 0 8 * * ?"
+
+springdoc:
+  api-docs:
+    path: /api-docs
+
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+  show-actuator: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.rentsphere: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+logging:
+  level:
+    com.rentsphere: INFO
+    root: WARN
