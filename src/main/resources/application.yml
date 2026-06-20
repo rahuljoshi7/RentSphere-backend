@@ -5,7 +5,7 @@ spring:
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/rentsphere}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:"@Rahul19"}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
     hikari:
@@ -21,7 +21,6 @@ spring:
       ddl-auto: update
     show-sql: false
     open-in-view: false
-
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -33,9 +32,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:rahulmjoshi0007@gmail.com}
-    password: ${MAIL_PASSWORD:oljz njiw wgul irna}
-
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -53,14 +51,14 @@ server:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:dGhpc0lzQVN1cGVyU2VjdXJlSldUU2VjcmV0S2V5Rm9yUmVudFNwaGVyZTIwMjY=}
+    secret: ${JWT_SECRET}
     expiration-ms: 86400000
     refresh-expiration-ms: 604800000
 
   cloudinary:
-    cloud-name: ${CLOUDINARY_CLOUD_NAME:dummy-cloud}
-    api-key: ${CLOUDINARY_API_KEY:dummy-key}
-    api-secret: ${CLOUDINARY_API_SECRET:dummy-secret}
+    cloud-name: ${CLOUDINARY_CLOUD_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    api-secret: ${CLOUDINARY_API_SECRET}
 
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
@@ -115,19 +113,27 @@ spring:
       on-profile: prod
 
   datasource:
-    url: ${DATABASE_URL}
+    url: jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}?sslmode=require
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
     hikari:
+      pool-name: RentSpherePool
       maximum-pool-size: 5
       minimum-idle: 1
       connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
-      ddl-auto: update        # use 'validate' once schema is stable
+      ddl-auto: update
     show-sql: false
     open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   mail:
     host: smtp.gmail.com
@@ -158,5 +164,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
-
+        include: health,info
