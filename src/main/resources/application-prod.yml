@@ -4,13 +4,12 @@ spring:
       on-profile: prod
 
   datasource:
-    # Render provides DATABASE_URL in postgres:// format
-    # Spring needs jdbc:postgresql:// format — handled by the url rewrite below
-    url: ${JDBC_DATABASE_URL}
+    url: jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}?sslmode=require
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      pool-name: RentSpherePool
-      maximum-pool-size: 5      # Free tier limit
+      maximum-pool-size: 5
       minimum-idle: 1
       connection-timeout: 30000
       idle-timeout: 600000
@@ -18,7 +17,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update          # update is safer than validate for first deploy
+      ddl-auto: update
     show-sql: false
     open-in-view: false
     properties:
@@ -84,7 +83,7 @@ management:
         include: health,info
   endpoint:
     health:
-      show-details: always      # needed for Render health check to pass
+      show-details: always
 
 logging:
   level:
