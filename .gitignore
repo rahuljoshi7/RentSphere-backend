@@ -1,8 +1,24 @@
+# Maven build output
 target/
 *.class
 *.jar
 *.war
+
+# IDE files
 .idea/
 *.iml
+.vscode/
+*.swp
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Logs
 *.log
+logs/
+
+# Environment files (never commit real secrets)
+.env
+.env.local
+.env.production

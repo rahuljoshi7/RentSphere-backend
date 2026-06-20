@@ -1,73 +1,57 @@
 services:
-  # ── Backend (Spring Boot) ──────────────────────────────────────────────────
+  # ── Backend: Spring Boot via Docker ───────────────────────────────────────
   - type: web
     name: rentsphere-api
-    runtime: java
+    runtime: docker                   # ← KEY CHANGE: was "java", now "docker"
     plan: free
-    buildCommand: mvn clean package -DskipTests -f rentsphere/pom.xml
-    startCommand: java -Dspring.profiles.active=prod -jar rentsphere/target/rentsphere-backend-1.0.0.jar
+    dockerfilePath: ./Dockerfile      # path relative to repo root (where Dockerfile lives)
     healthCheckPath: /actuator/health
     envVars:
+      # ── Database (auto-filled from Render PostgreSQL) ──
       - key: DATABASE_URL
         fromDatabase:
           name: rentsphere-db
           property: connectionString
+
       - key: DB_USERNAME
         fromDatabase:
           name: rentsphere-db
           property: user
+
       - key: DB_PASSWORD
         fromDatabase:
           name: rentsphere-db
           property: password
+
+      # ── JWT ──
       - key: JWT_SECRET
         generateValue: true
-      - key: JWT_EXPIRATION_MS
-        value: "86400000"
+
+      # ── Cloudinary ──
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
+
       - key: CLOUDINARY_API_KEY
         sync: false
+
       - key: CLOUDINARY_API_SECRET
         sync: false
+
+      # ── Mail ──
       - key: MAIL_USERNAME
         sync: false
+
       - key: MAIL_PASSWORD
         sync: false
+
       - key: MAIL_FROM
         value: noreply@rentsphere.com
-      - key: CORS_ORIGINS
-        value: https://rentsphere.onrender.com
-      - key: JAVA_OPTS
-        value: "-Xmx400m -Xms200m"
 
-  # ── Frontend (React + Vite) ────────────────────────────────────────────────
-  - type: web
-    name: rentsphere
-    runtime: static
-    plan: free
-    buildCommand: cd rentsphere-frontend && npm ci && npm run build
-    staticPublishPath: rentsphere-frontend/dist
-    pullRequestPreviewsEnabled: true
-    headers:
-      - path: /*
-        name: X-Frame-Options
-        value: SAMEORIGIN
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: Referrer-Policy
-        value: strict-origin-when-cross-origin
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_BASE_URL
-        value: https://rentsphere-api.onrender.com/api/v1
+      # ── CORS — update this once your frontend is deployed ──
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://rentsphere.onrender.com,http://localhost:5173
 
-# ── PostgreSQL Database ────────────────────────────────────────────────────
+# ── PostgreSQL (already created — this just links it) ─────────────────────
 databases:
   - name: rentsphere-db
     plan: free
