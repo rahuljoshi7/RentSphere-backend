@@ -6,9 +6,7 @@ spring:
   datasource:
     # Render provides DATABASE_URL in postgres:// format
     # Spring needs jdbc:postgresql:// format — handled by the url rewrite below
-    url: ${DATABASE_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${JDBC_DATABASE_URL}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: RentSpherePool
