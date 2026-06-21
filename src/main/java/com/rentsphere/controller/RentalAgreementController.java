@@ -2,7 +2,6 @@ package com.rentsphere.controller;
 
 import com.rentsphere.dto.request.AgreementRequest;
 import com.rentsphere.dto.response.AgreementResponse;
-import com.rentsphere.dto.response.ApiResponse;
 import com.rentsphere.dto.response.PagedResponse;
 import com.rentsphere.service.RentalAgreementService;
 import com.rentsphere.util.SecurityUtils;
@@ -21,89 +20,165 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/agreements")
 @RequiredArgsConstructor
-@Tag(name = "Rental Agreements", description = "Agreement lifecycle management")
+@Tag(name = "Rental Agreements", description = "Rental Agreement Management APIs")
 @SecurityRequirement(name = "bearerAuth")
 public class RentalAgreementController {
 
     private final RentalAgreementService agreementService;
 
+    // ==================================================
+    // CREATE AGREEMENT
+    // ==================================================
+
     @PostMapping
-    @Operation(summary = "Create a new rental agreement")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<AgreementResponse> create(@Valid @RequestBody AgreementRequest request) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
+    @Operation(summary = "Create Rental Agreement")
+    public ResponseEntity<AgreementResponse> createAgreement(
+            @Valid @RequestBody AgreementRequest request) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(agreementService.create(request, requesterId));
+                .body(agreementService.create(request, userId));
     }
+
+    // ==================================================
+    // GET AGREEMENT BY ID
+    // ==================================================
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get agreement by ID")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER','TENANT')")
-    public ResponseEntity<AgreementResponse> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(agreementService.findById(id));
+    @Operation(summary = "Get Agreement By ID")
+    public ResponseEntity<AgreementResponse> getAgreement(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                agreementService.findById(id)
+        );
     }
+
+    // ==================================================
+    // PROPERTY AGREEMENTS
+    // ==================================================
 
     @GetMapping("/property/{propertyId}")
-    @Operation(summary = "Get agreements by property")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<PagedResponse<AgreementResponse>> findByProperty(
-        @PathVariable Long propertyId,
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(agreementService.findByProperty(propertyId, page, size));
+    @Operation(summary = "Get Agreements By Property")
+    public ResponseEntity<PagedResponse<AgreementResponse>> getPropertyAgreements(
+            @PathVariable Long propertyId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                agreementService.findByProperty(propertyId, page, size)
+        );
     }
+
+    // ==================================================
+    // TENANT AGREEMENTS (ADMIN / OWNER / MANAGER)
+    // ==================================================
 
     @GetMapping("/tenant/{tenantId}")
-    @Operation(summary = "Get agreements by tenant")
-    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER','TENANT')")
-    public ResponseEntity<PagedResponse<AgreementResponse>> findByTenant(
-        @PathVariable Long tenantId,
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(agreementService.findByTenant(tenantId, page, size));
+    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
+    @Operation(summary = "Get Agreements By Tenant")
+    public ResponseEntity<PagedResponse<AgreementResponse>> getTenantAgreements(
+            @PathVariable Long tenantId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                agreementService.findByTenant(tenantId, page, size)
+        );
     }
+
+    // ==================================================
+    // CURRENT TENANT AGREEMENTS
+    // ==================================================
 
     @GetMapping("/my")
-    @Operation(summary = "Get agreements for the authenticated owner")
-    @PreAuthorize("hasAnyRole('PROPERTY_OWNER','ADMIN')")
-    public ResponseEntity<PagedResponse<AgreementResponse>> findMine(
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        Long ownerId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(agreementService.findByOwner(ownerId, page, size));
+    @PreAuthorize("hasRole('TENANT')")
+    @Operation(summary = "Get Logged-in Tenant Agreements")
+    public ResponseEntity<PagedResponse<AgreementResponse>> getMyAgreements(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Long tenantId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                agreementService.findByTenant(tenantId, page, size)
+        );
     }
 
-    @PostMapping(value = "/{id}/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload agreement document (PDF)")
-    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<AgreementResponse> uploadDocument(
-        @PathVariable Long id,
-        @RequestPart("file") MultipartFile file
-    ) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(agreementService.uploadDocument(id, file, requesterId));
+    // ==================================================
+    // CURRENT OWNER AGREEMENTS
+    // ==================================================
+
+    @GetMapping("/owner/my")
+    @PreAuthorize("hasAnyRole('PROPERTY_OWNER','ADMIN')")
+    @Operation(summary = "Get Logged-in Owner Agreements")
+    public ResponseEntity<PagedResponse<AgreementResponse>> getOwnerAgreements(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Long ownerId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                agreementService.findByOwner(ownerId, page, size)
+        );
     }
+
+    // ==================================================
+    // UPLOAD AGREEMENT DOCUMENT
+    // ==================================================
+
+    @PostMapping(
+            value = "/{id}/document",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
+    @Operation(summary = "Upload Agreement PDF")
+    public ResponseEntity<AgreementResponse> uploadDocument(
+            @PathVariable Long id,
+            @RequestPart("file") MultipartFile file) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                agreementService.uploadDocument(id, file, userId)
+        );
+    }
+
+    // ==================================================
+    // TERMINATE AGREEMENT
+    // ==================================================
 
     @PatchMapping("/{id}/terminate")
-    @Operation(summary = "Terminate an active agreement")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<AgreementResponse> terminate(@PathVariable Long id) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(agreementService.terminate(id, requesterId));
+    @Operation(summary = "Terminate Agreement")
+    public ResponseEntity<AgreementResponse> terminateAgreement(
+            @PathVariable Long id) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                agreementService.terminate(id, userId)
+        );
     }
 
+    // ==================================================
+    // RENEW AGREEMENT
+    // ==================================================
+
     @PostMapping("/{id}/renew")
-    @Operation(summary = "Renew an agreement")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<AgreementResponse> renew(
-        @PathVariable Long id,
-        @Valid @RequestBody AgreementRequest request
-    ) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
+    @Operation(summary = "Renew Agreement")
+    public ResponseEntity<AgreementResponse> renewAgreement(
+            @PathVariable Long id,
+            @Valid @RequestBody AgreementRequest request) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(agreementService.renew(id, request, requesterId));
+                .body(agreementService.renew(id, request, userId));
     }
 }
