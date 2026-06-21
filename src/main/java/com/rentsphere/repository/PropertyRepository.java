@@ -62,7 +62,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
     );
 
     // ==================================================
-    // LEGACY DASHBOARD METHODS
+    // LEGACY METHODS USED IN DASHBOARDSERVICE
     // ==================================================
 
     @Query("""
@@ -83,7 +83,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
         SELECT COUNT(p)
         FROM Property p
         WHERE p.owner.id = :ownerId
-          AND p.availabilityStatus = 'OCCUPIED'
+        AND p.availabilityStatus = 'OCCUPIED'
     """)
     long countOccupiedByOwnerId(
             @Param("ownerId") Long ownerId
@@ -93,7 +93,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
         SELECT COUNT(p)
         FROM Property p
         WHERE p.manager.id = :managerId
-          AND p.availabilityStatus = 'OCCUPIED'
+        AND p.availabilityStatus = 'OCCUPIED'
     """)
     long countOccupiedByManagerId(
             @Param("managerId") Long managerId
