@@ -11,6 +11,7 @@ import com.rentsphere.exception.UnauthorizedException;
 import com.rentsphere.repository.PropertyImageRepository;
 import com.rentsphere.repository.PropertyRepository;
 import com.rentsphere.repository.UserRepository;
+import org.springframework.data.jpa.domain.Specification;
 import com.rentsphere.service.CloudinaryService;
 import com.rentsphere.service.PropertyService;
 import lombok.RequiredArgsConstructor;
