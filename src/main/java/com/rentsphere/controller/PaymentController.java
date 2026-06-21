@@ -22,95 +22,173 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
-@Tag(name = "Payments", description = "Rent payment tracking and management")
+@Tag(name = "Payments", description = "Rent Payment Management APIs")
 @SecurityRequirement(name = "bearerAuth")
 public class PaymentController {
 
     private final PaymentService paymentService;
 
+    // ==================================================
+    // GENERATE PAYMENT
+    // ==================================================
+
     @PostMapping("/generate/{agreementId}")
-    @Operation(summary = "Generate monthly payment for an agreement")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<PaymentResponse> generate(
-        @PathVariable Long agreementId,
-        @RequestParam @Min(1) @Max(12) int month,
-        @RequestParam @Min(2020)       int year
-    ) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
+    @Operation(summary = "Generate Monthly Payment")
+    public ResponseEntity<PaymentResponse> generatePayment(
+            @PathVariable Long agreementId,
+            @RequestParam @Min(1) @Max(12) int month,
+            @RequestParam @Min(2020) int year) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(paymentService.generateMonthlyPayment(agreementId, month, year, requesterId));
+                .body(paymentService.generateMonthlyPayment(
+                        agreementId,
+                        month,
+                        year,
+                        userId
+                ));
     }
+
+    // ==================================================
+    // RECORD PAYMENT
+    // ==================================================
 
     @PatchMapping("/{id}/record")
-    @Operation(summary = "Record a payment (mark as paid)")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<PaymentResponse> record(
-        @PathVariable Long id,
-        @Valid @RequestBody PaymentRequest request
-    ) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(paymentService.recordPayment(id, request, requesterId));
+    @Operation(summary = "Record Payment")
+    public ResponseEntity<PaymentResponse> recordPayment(
+            @PathVariable Long id,
+            @Valid @RequestBody PaymentRequest request) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                paymentService.recordPayment(id, request, userId)
+        );
     }
+
+    // ==================================================
+    // GET PAYMENT BY ID
+    // ==================================================
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get payment by ID")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER','TENANT')")
-    public ResponseEntity<PaymentResponse> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(paymentService.findById(id));
+    @Operation(summary = "Get Payment By ID")
+    public ResponseEntity<PaymentResponse> getPayment(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                paymentService.findById(id)
+        );
     }
+
+    // ==================================================
+    // TENANT PAYMENT HISTORY
+    // ==================================================
 
     @GetMapping("/tenant/{tenantId}")
-    @Operation(summary = "Get payment history for a tenant")
-    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER','TENANT')")
-    public ResponseEntity<PagedResponse<PaymentResponse>> findByTenant(
-        @PathVariable Long tenantId,
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(paymentService.findByTenant(tenantId, page, size));
+    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
+    @Operation(summary = "Get Payments By Tenant")
+    public ResponseEntity<PagedResponse<PaymentResponse>> getTenantPayments(
+            @PathVariable Long tenantId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                paymentService.findByTenant(tenantId, page, size)
+        );
     }
+
+    // ==================================================
+    // AGREEMENT PAYMENTS
+    // ==================================================
 
     @GetMapping("/agreement/{agreementId}")
-    @Operation(summary = "Get payments for an agreement")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER','TENANT')")
-    public ResponseEntity<PagedResponse<PaymentResponse>> findByAgreement(
-        @PathVariable Long agreementId,
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(paymentService.findByAgreement(agreementId, page, size));
+    @Operation(summary = "Get Payments By Agreement")
+    public ResponseEntity<PagedResponse<PaymentResponse>> getAgreementPayments(
+            @PathVariable Long agreementId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                paymentService.findByAgreement(agreementId, page, size)
+        );
     }
+
+    // ==================================================
+    // CURRENT TENANT PAYMENTS
+    // ==================================================
 
     @GetMapping("/my")
-    @Operation(summary = "Get payments under the authenticated owner's properties")
-    @PreAuthorize("hasAnyRole('PROPERTY_OWNER','ADMIN')")
-    public ResponseEntity<PagedResponse<PaymentResponse>> findMine(
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        Long ownerId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(paymentService.findByOwner(ownerId, page, size));
+    @PreAuthorize("hasRole('TENANT')")
+    @Operation(summary = "Get Logged-in Tenant Payments")
+    public ResponseEntity<PagedResponse<PaymentResponse>> getMyPayments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Long tenantId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                paymentService.findByTenant(tenantId, page, size)
+        );
     }
+
+    // ==================================================
+    // CURRENT OWNER PAYMENTS
+    // ==================================================
+
+    @GetMapping("/owner/my")
+    @PreAuthorize("hasAnyRole('PROPERTY_OWNER','ADMIN')")
+    @Operation(summary = "Get Logged-in Owner Payments")
+    public ResponseEntity<PagedResponse<PaymentResponse>> getOwnerPayments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Long ownerId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                paymentService.findByOwner(ownerId, page, size)
+        );
+    }
+
+    // ==================================================
+    // PAYMENTS BY STATUS
+    // ==================================================
 
     @GetMapping("/status/{status}")
-    @Operation(summary = "Get payments by status (PENDING / PAID / OVERDUE)")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<PagedResponse<PaymentResponse>> findByStatus(
-        @PathVariable Payment.PaymentStatus status,
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(paymentService.findByStatus(status, page, size));
+    @Operation(summary = "Get Payments By Status")
+    public ResponseEntity<PagedResponse<PaymentResponse>> getPaymentsByStatus(
+            @PathVariable Payment.PaymentStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                paymentService.findByStatus(status, page, size)
+        );
     }
 
+    // ==================================================
+    // BULK PAYMENT GENERATION
+    // ==================================================
+
     @PostMapping("/generate-bulk")
-    @Operation(summary = "Manually trigger bulk monthly rent generation (Admin)")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse> generateBulk(
-        @RequestParam @Min(1) @Max(12) int month,
-        @RequestParam @Min(2020)       int year
-    ) {
+    @Operation(summary = "Generate Monthly Payments For All Agreements")
+    public ResponseEntity<ApiResponse> generateBulkPayments(
+            @RequestParam @Min(1) @Max(12) int month,
+            @RequestParam @Min(2020) int year) {
+
         paymentService.generateMonthlyRentForAllActive(month, year);
-        return ResponseEntity.ok(ApiResponse.success("Bulk payment generation triggered for " + month + "/" + year));
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Bulk payment generation triggered for "
+                                + month + "/" + year
+                )
+        );
     }
 }
