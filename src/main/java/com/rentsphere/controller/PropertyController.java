@@ -25,145 +25,214 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/properties")
 @RequiredArgsConstructor
-@Tag(name = "Properties", description = "Property management endpoints")
+@Tag(name = "Properties", description = "Property Management APIs")
 @SecurityRequirement(name = "bearerAuth")
 public class PropertyController {
 
     private final PropertyService propertyService;
 
-    // ── Create ────────────────────────────────────────────────────────────────
+    // ==================================================
+    // CREATE PROPERTY
+    // ==================================================
 
     @PostMapping
-    @Operation(summary = "Create a new property")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER')")
-    public ResponseEntity<PropertyResponse> create(@Valid @RequestBody PropertyRequest request) {
+    @Operation(summary = "Create Property")
+    public ResponseEntity<PropertyResponse> createProperty(
+            @Valid @RequestBody PropertyRequest request) {
+
         Long ownerId = SecurityUtils.getCurrentUserId();
+
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(propertyService.create(request, ownerId));
+                .body(propertyService.create(request, ownerId));
     }
 
-    // ── Update ────────────────────────────────────────────────────────────────
+    // ==================================================
+    // UPDATE PROPERTY
+    // ==================================================
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update property details")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<PropertyResponse> update(
-        @PathVariable Long id,
-        @Valid @RequestBody PropertyRequest request
-    ) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(propertyService.update(id, request, requesterId));
-    }
+    @Operation(summary = "Update Property")
+    public ResponseEntity<PropertyResponse> updateProperty(
+            @PathVariable Long id,
+            @Valid @RequestBody PropertyRequest request) {
 
-    // ── Delete ────────────────────────────────────────────────────────────────
+        Long userId = SecurityUtils.getCurrentUserId();
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a property")
-    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER')")
-    public ResponseEntity<ApiResponse> delete(@PathVariable Long id) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
-        propertyService.delete(id, requesterId);
-        return ResponseEntity.ok(ApiResponse.success("Property deleted successfully."));
-    }
-
-    // ── Get by ID ─────────────────────────────────────────────────────────────
-
-    @GetMapping("/{id}")
-    @Operation(summary = "Get property by ID")
-    public ResponseEntity<PropertyResponse> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(propertyService.findById(id));
-    }
-
-    // ── Get all ───────────────────────────────────────────────────────────────
-
-    @GetMapping
-    @Operation(summary = "Get all properties (paginated)")
-    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<PagedResponse<PropertyResponse>> findAll(
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(propertyService.findAll(page, size));
-    }
-
-    // ── My properties (owner) ─────────────────────────────────────────────────
-
-    @GetMapping("/my")
-    @Operation(summary = "Get properties owned by the authenticated user")
-    @PreAuthorize("hasAnyRole('PROPERTY_OWNER','ADMIN')")
-    public ResponseEntity<PagedResponse<PropertyResponse>> findMine(
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        Long ownerId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(propertyService.findByOwner(ownerId, page, size));
-    }
-
-    // ── Search & Filter ───────────────────────────────────────────────────────
-
-    @GetMapping("/search")
-    @Operation(summary = "Search and filter properties (public)")
-    public ResponseEntity<PagedResponse<PropertyResponse>> search(
-        @RequestParam(required = false) String name,
-        @RequestParam(required = false) String city,
-        @RequestParam(required = false) Property.PropertyType type,
-        @RequestParam(required = false) Property.AvailabilityStatus status,
-        @RequestParam(required = false) BigDecimal minRent,
-        @RequestParam(required = false) BigDecimal maxRent,
-        @RequestParam(required = false, defaultValue = "newest") String sortBy,
-        @RequestParam(defaultValue = "0")  int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
         return ResponseEntity.ok(
-            propertyService.search(name, city, type, status, minRent, maxRent, sortBy, page, size)
+                propertyService.update(id, request, userId)
         );
     }
 
-    // ── Cities list ───────────────────────────────────────────────────────────
+    // ==================================================
+    // DELETE PROPERTY
+    // ==================================================
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER')")
+    @Operation(summary = "Delete Property")
+    public ResponseEntity<ApiResponse> deleteProperty(
+            @PathVariable Long id) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        propertyService.delete(id, userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Property deleted successfully.")
+        );
+    }
+
+    // ==================================================
+    // GET PROPERTY BY ID
+    // ==================================================
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get Property By ID")
+    public ResponseEntity<PropertyResponse> getProperty(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                propertyService.findById(id)
+        );
+    }
+
+    // ==================================================
+    // GET ALL PROPERTIES (ADMIN/OWNER/MANAGER)
+    // ==================================================
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
+    @Operation(summary = "Get All Properties")
+    public ResponseEntity<PagedResponse<PropertyResponse>> getAllProperties(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                propertyService.findAll(page, size)
+        );
+    }
+
+    // ==================================================
+    // MY PROPERTIES
+    // ==================================================
+
+    @GetMapping("/my")
+    @PreAuthorize("hasAnyRole('PROPERTY_OWNER','ADMIN')")
+    @Operation(summary = "Get Logged-in Owner Properties")
+    public ResponseEntity<PagedResponse<PropertyResponse>> getMyProperties(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Long ownerId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                propertyService.findByOwner(ownerId, page, size)
+        );
+    }
+
+    // ==================================================
+    // SEARCH PROPERTIES (PUBLIC)
+    // ==================================================
+
+    @GetMapping("/search")
+    @Operation(summary = "Search Properties")
+    public ResponseEntity<PagedResponse<PropertyResponse>> searchProperties(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) Property.PropertyType type,
+            @RequestParam(required = false) Property.AvailabilityStatus status,
+            @RequestParam(required = false) BigDecimal minRent,
+            @RequestParam(required = false) BigDecimal maxRent,
+            @RequestParam(defaultValue = "newest") String sortBy,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                propertyService.search(
+                        name,
+                        city,
+                        type,
+                        status,
+                        minRent,
+                        maxRent,
+                        sortBy,
+                        page,
+                        size
+                )
+        );
+    }
+
+    // ==================================================
+    // GET CITIES
+    // ==================================================
 
     @GetMapping("/cities")
-    @Operation(summary = "Get distinct cities (public)")
+    @Operation(summary = "Get All Cities")
     public ResponseEntity<List<String>> getCities() {
-        return ResponseEntity.ok(propertyService.getAllCities());
+
+        return ResponseEntity.ok(
+                propertyService.getAllCities()
+        );
     }
 
-    // ── Upload images ─────────────────────────────────────────────────────────
+    // ==================================================
+    // UPLOAD PROPERTY IMAGES
+    // ==================================================
 
-    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload images for a property")
+    @PostMapping(
+            value = "/{id}/images",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
+    @Operation(summary = "Upload Property Images")
     public ResponseEntity<PropertyResponse> uploadImages(
-        @PathVariable Long id,
-        @RequestPart("files") List<MultipartFile> files
-    ) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(propertyService.uploadImages(id, files, requesterId));
+            @PathVariable Long id,
+            @RequestPart("files") List<MultipartFile> files) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                propertyService.uploadImages(id, files, userId)
+        );
     }
 
-    // ── Delete image ──────────────────────────────────────────────────────────
+    // ==================================================
+    // DELETE PROPERTY IMAGE
+    // ==================================================
 
     @DeleteMapping("/{id}/images/{imageId}")
-    @Operation(summary = "Delete a property image")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
+    @Operation(summary = "Delete Property Image")
     public ResponseEntity<ApiResponse> deleteImage(
-        @PathVariable Long id,
-        @PathVariable Long imageId
-    ) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
-        propertyService.deleteImage(id, imageId, requesterId);
-        return ResponseEntity.ok(ApiResponse.success("Image deleted successfully."));
+            @PathVariable Long id,
+            @PathVariable Long imageId) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        propertyService.deleteImage(id, imageId, userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Image deleted successfully.")
+        );
     }
 
-    // ── Update status ─────────────────────────────────────────────────────────
+    // ==================================================
+    // UPDATE PROPERTY STATUS
+    // ==================================================
 
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Update property availability status")
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER','PROPERTY_MANAGER')")
-    public ResponseEntity<PropertyResponse> updateStatus(
-        @PathVariable Long id,
-        @RequestParam Property.AvailabilityStatus status
-    ) {
-        Long requesterId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(propertyService.updateStatus(id, status, requesterId));
+    @Operation(summary = "Update Property Status")
+    public ResponseEntity<PropertyResponse> updatePropertyStatus(
+            @PathVariable Long id,
+            @RequestParam Property.AvailabilityStatus status) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        return ResponseEntity.ok(
+                propertyService.updateStatus(id, status, userId)
+        );
     }
 }
