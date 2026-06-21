@@ -127,24 +127,76 @@ public class PropertyServiceImpl implements PropertyService {
     // ── Search & Filter ───────────────────────────────────────────────────────
 
     @Override
-    public PagedResponse<PropertyResponse> search(
-        String name, String city, Property.PropertyType type,
+public PagedResponse<PropertyResponse> search(
+        String name,
+        String city,
+        Property.PropertyType type,
         Property.AvailabilityStatus status,
-        BigDecimal minRent, BigDecimal maxRent,
-        String sortBy, int page, int size
-    ) {
-        Sort sort = switch (sortBy == null ? "" : sortBy) {
-            case "rentAsc"  -> Sort.by("rentAmount").ascending();
-            case "rentDesc" -> Sort.by("rentAmount").descending();
-            default         -> Sort.by("createdAt").descending();
-        };
-        Pageable pageable = PageRequest.of(page, size, sort);
+        BigDecimal minRent,
+        BigDecimal maxRent,
+        String sortBy,
+        int page,
+        int size
+) {
 
-        Page<Property> result = propertyRepository.searchAndFilter(
-            name, city, type, status, minRent, maxRent, pageable
-        );
-        return PagedResponse.of(result.map(this::toResponse));
+    Sort sort = switch (sortBy == null ? "" : sortBy) {
+        case "rentAsc" -> Sort.by("rentAmount").ascending();
+        case "rentDesc" -> Sort.by("rentAmount").descending();
+        default -> Sort.by("createdAt").descending();
+    };
+
+    Pageable pageable = PageRequest.of(page, size, sort);
+
+    Specification<Property> spec = Specification.where(null);
+
+    if (name != null && !name.trim().isEmpty()) {
+        spec = spec.and((root, query, cb) ->
+                cb.like(
+                        cb.lower(root.get("name")),
+                        "%" + name.toLowerCase().trim() + "%"
+                ));
     }
+
+    if (city != null && !city.trim().isEmpty()) {
+        spec = spec.and((root, query, cb) ->
+                cb.like(
+                        cb.lower(root.get("city")),
+                        "%" + city.toLowerCase().trim() + "%"
+                ));
+    }
+
+    if (type != null) {
+        spec = spec.and((root, query, cb) ->
+                cb.equal(root.get("propertyType"), type));
+    }
+
+    if (status != null) {
+        spec = spec.and((root, query, cb) ->
+                cb.equal(root.get("availabilityStatus"), status));
+    }
+
+    if (minRent != null) {
+        spec = spec.and((root, query, cb) ->
+                cb.greaterThanOrEqualTo(
+                        root.get("rentAmount"),
+                        minRent
+                ));
+    }
+
+    if (maxRent != null) {
+        spec = spec.and((root, query, cb) ->
+                cb.lessThanOrEqualTo(
+                        root.get("rentAmount"),
+                        maxRent
+                ));
+    }
+
+    Page<Property> result = propertyRepository.findAll(spec, pageable);
+
+    return PagedResponse.of(
+            result.map(this::toResponse)
+    );
+}
 
     // ── Images ────────────────────────────────────────────────────────────────
 
