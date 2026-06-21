@@ -20,9 +20,15 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
     // PROPERTY LISTS
     // ==================================================
 
-    Page<Property> findByOwnerId(Long ownerId, Pageable pageable);
+    Page<Property> findByOwnerId(
+            Long ownerId,
+            Pageable pageable
+    );
 
-    Page<Property> findByManagerId(Long managerId, Pageable pageable);
+    Page<Property> findByManagerId(
+            Long managerId,
+            Pageable pageable
+    );
 
     Page<Property> findByAvailabilityStatus(
             AvailabilityStatus status,
@@ -33,16 +39,22 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
     // DASHBOARD STATS
     // ==================================================
 
-    long countByAvailabilityStatus(AvailabilityStatus status);
+    long countByAvailabilityStatus(
+            AvailabilityStatus status
+    );
 
-    long countByOwnerId(Long ownerId);
+    long countByOwnerId(
+            Long ownerId
+    );
 
     long countByOwnerIdAndAvailabilityStatus(
             Long ownerId,
             AvailabilityStatus status
     );
 
-    long countByManagerId(Long managerId);
+    long countByManagerId(
+            Long managerId
+    );
 
     long countByManagerIdAndAvailabilityStatus(
             Long managerId,
@@ -50,10 +62,51 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
     );
 
     // ==================================================
-    // CITIES
+    // LEGACY DASHBOARD METHODS
     // ==================================================
 
-    @Query("SELECT DISTINCT p.city FROM Property p ORDER BY p.city")
-    List<String> findAllCities();
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.availabilityStatus = 'OCCUPIED'
+    """)
+    long countOccupied();
 
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.availabilityStatus = 'AVAILABLE'
+    """)
+    long countAvailable();
+
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.owner.id = :ownerId
+          AND p.availabilityStatus = 'OCCUPIED'
+    """)
+    long countOccupiedByOwnerId(
+            @Param("ownerId") Long ownerId
+    );
+
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.manager.id = :managerId
+          AND p.availabilityStatus = 'OCCUPIED'
+    """)
+    long countOccupiedByManagerId(
+            @Param("managerId") Long managerId
+    );
+
+    // ==================================================
+    // CITY LIST
+    // ==================================================
+
+    @Query("""
+        SELECT DISTINCT p.city
+        FROM Property p
+        ORDER BY p.city
+    """)
+    List<String> findAllCities();
 }
