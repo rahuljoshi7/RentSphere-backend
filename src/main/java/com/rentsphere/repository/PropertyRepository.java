@@ -37,8 +37,8 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
 
     @Query("""
         SELECT p FROM Property p
-        WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%')))
-          AND (:city IS NULL OR LOWER(p.city) LIKE LOWER(CONCAT('%', :city, '%')))
+        WHERE (:name IS NULL OR p.name LIKE CONCAT('%', :name, '%'))
+          AND (:city IS NULL OR p.city LIKE CONCAT('%', :city, '%'))
           AND (:type IS NULL OR p.propertyType = :type)
           AND (:status IS NULL OR p.availabilityStatus = :status)
           AND (:minRent IS NULL OR p.rentAmount >= :minRent)
@@ -58,31 +58,47 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
     // DASHBOARD STATISTICS
     // ==================================================
 
-    @Query("SELECT COUNT(p) FROM Property p WHERE p.availabilityStatus = 'OCCUPIED'")
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.availabilityStatus = 'OCCUPIED'
+        """)
     long countOccupied();
 
-    @Query("SELECT COUNT(p) FROM Property p WHERE p.availabilityStatus = 'AVAILABLE'")
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.availabilityStatus = 'AVAILABLE'
+        """)
     long countAvailable();
 
-    @Query("SELECT COUNT(p) FROM Property p WHERE p.owner.id = :ownerId")
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.owner.id = :ownerId
+        """)
     long countByOwnerId(@Param("ownerId") Long ownerId);
 
     @Query("""
         SELECT COUNT(p)
         FROM Property p
         WHERE p.owner.id = :ownerId
-        AND p.availabilityStatus = 'OCCUPIED'
+          AND p.availabilityStatus = 'OCCUPIED'
         """)
     long countOccupiedByOwnerId(@Param("ownerId") Long ownerId);
 
-    @Query("SELECT COUNT(p) FROM Property p WHERE p.manager.id = :managerId")
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.manager.id = :managerId
+        """)
     long countByManagerId(@Param("managerId") Long managerId);
 
     @Query("""
         SELECT COUNT(p)
         FROM Property p
         WHERE p.manager.id = :managerId
-        AND p.availabilityStatus = 'OCCUPIED'
+          AND p.availabilityStatus = 'OCCUPIED'
         """)
     long countOccupiedByManagerId(@Param("managerId") Long managerId);
 
@@ -90,6 +106,10 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
     // CITY LIST
     // ==================================================
 
-    @Query("SELECT DISTINCT p.city FROM Property p ORDER BY p.city")
+    @Query("""
+        SELECT DISTINCT p.city
+        FROM Property p
+        ORDER BY p.city
+        """)
     List<String> findAllCities();
 }
