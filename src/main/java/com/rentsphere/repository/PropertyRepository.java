@@ -6,6 +6,7 @@ import com.rentsphere.entity.Property.PropertyType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,7 +15,12 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Repository
-public interface PropertyRepository extends JpaRepository<Property, Long> {
+public interface PropertyRepository extends JpaRepository<Property, Long>,
+        JpaSpecificationExecutor<Property> {
+
+    // ==================================================
+    // BASIC QUERIES
+    // ==================================================
 
     Page<Property> findByOwnerId(Long ownerId, Pageable pageable);
 
@@ -25,27 +31,18 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
             Pageable pageable
     );
 
+    // ==================================================
+    // SEARCH & FILTER
+    // ==================================================
+
     @Query("""
-        SELECT p
-        FROM Property p
-        WHERE
-            (:name IS NULL OR
-             LOWER(p.name) LIKE CONCAT('%', LOWER(:name), '%'))
-
-        AND (:city IS NULL OR
-             LOWER(p.city) LIKE CONCAT('%', LOWER(:city), '%'))
-
-        AND (:type IS NULL OR
-             p.propertyType = :type)
-
-        AND (:status IS NULL OR
-             p.availabilityStatus = :status)
-
-        AND (:minRent IS NULL OR
-             p.rentAmount >= :minRent)
-
-        AND (:maxRent IS NULL OR
-             p.rentAmount <= :maxRent)
+        SELECT p FROM Property p
+        WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%')))
+          AND (:city IS NULL OR LOWER(p.city) LIKE LOWER(CONCAT('%', :city, '%')))
+          AND (:type IS NULL OR p.propertyType = :type)
+          AND (:status IS NULL OR p.availabilityStatus = :status)
+          AND (:minRent IS NULL OR p.rentAmount >= :minRent)
+          AND (:maxRent IS NULL OR p.rentAmount <= :maxRent)
         """)
     Page<Property> searchAndFilter(
             @Param("name") String name,
@@ -57,39 +54,35 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
             Pageable pageable
     );
 
-    @Query("""
-        SELECT COUNT(p)
-        FROM Property p
-        WHERE p.availabilityStatus =
-        com.rentsphere.entity.Property.AvailabilityStatus.OCCUPIED
-        """)
-    long countOccupied();
+    // ==================================================
+    // DASHBOARD COUNTS
+    // ==================================================
 
-    @Query("""
-        SELECT COUNT(p)
-        FROM Property p
-        WHERE p.availabilityStatus =
-        com.rentsphere.entity.Property.AvailabilityStatus.AVAILABLE
-        """)
-    long countAvailable();
-
-    @Query("""
-        SELECT COUNT(p)
-        FROM Property p
-        WHERE p.owner.id = :ownerId
-        """)
-    long countByOwnerId(@Param("ownerId") Long ownerId);
-
-    @Query("""
-        SELECT COUNT(p)
-        FROM Property p
-        WHERE p.owner.id = :ownerId
-        AND p.availabilityStatus =
-        com.rentsphere.entity.Property.AvailabilityStatus.OCCUPIED
-        """)
-    long countOccupiedByOwnerId(
-            @Param("ownerId") Long ownerId
+    long countByAvailabilityStatus(
+            AvailabilityStatus status
     );
+
+    long countByOwnerId(
+            Long ownerId
+    );
+
+    long countByOwnerIdAndAvailabilityStatus(
+            Long ownerId,
+            AvailabilityStatus status
+    );
+
+    long countByManagerId(
+            Long managerId
+    );
+
+    long countByManagerIdAndAvailabilityStatus(
+            Long managerId,
+            AvailabilityStatus status
+    );
+
+    // ==================================================
+    // CITY LIST
+    // ==================================================
 
     @Query("""
         SELECT DISTINCT p.city
@@ -97,24 +90,4 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
         ORDER BY p.city
         """)
     List<String> findAllCities();
-
-    @Query("""
-        SELECT COUNT(p)
-        FROM Property p
-        WHERE p.manager.id = :managerId
-        """)
-    long countByManagerId(
-            @Param("managerId") Long managerId
-    );
-
-    @Query("""
-        SELECT COUNT(p)
-        FROM Property p
-        WHERE p.manager.id = :managerId
-        AND p.availabilityStatus =
-        com.rentsphere.entity.Property.AvailabilityStatus.OCCUPIED
-        """)
-    long countOccupiedByManagerId(
-            @Param("managerId") Long managerId
-    );
 }
