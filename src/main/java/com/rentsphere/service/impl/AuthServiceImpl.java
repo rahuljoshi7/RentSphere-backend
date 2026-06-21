@@ -67,7 +67,11 @@ public class AuthServiceImpl implements AuthService {
         if (request.getRole() == Role.RoleName.TENANT) {
             Tenant tenant = Tenant.builder().user(user).build();
             tenantRepository.save(tenant);
-            notificationService.sendTenantRegistrationNotification(user);
+            try {
+                notificationService.sendTenantRegistrationNotification(user);
+            } catch (Exception e) {
+                log.error("Email notification failed", e);
+            }
         }
 
         log.info("New user registered: {} [{}]", user.getEmail(), role.getName());
