@@ -19,7 +19,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
         JpaSpecificationExecutor<Property> {
 
     // ==================================================
-    // BASIC QUERIES
+    // BASIC PROPERTY QUERIES
     // ==================================================
 
     Page<Property> findByOwnerId(Long ownerId, Pageable pageable);
@@ -55,39 +55,41 @@ public interface PropertyRepository extends JpaRepository<Property, Long>,
     );
 
     // ==================================================
-    // DASHBOARD COUNTS
+    // DASHBOARD STATISTICS
     // ==================================================
 
-    long countByAvailabilityStatus(
-            AvailabilityStatus status
-    );
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.availabilityStatus = 'OCCUPIED'")
+    long countOccupied();
 
-    long countByOwnerId(
-            Long ownerId
-    );
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.availabilityStatus = 'AVAILABLE'")
+    long countAvailable();
 
-    long countByOwnerIdAndAvailabilityStatus(
-            Long ownerId,
-            AvailabilityStatus status
-    );
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.owner.id = :ownerId")
+    long countByOwnerId(@Param("ownerId") Long ownerId);
 
-    long countByManagerId(
-            Long managerId
-    );
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.owner.id = :ownerId
+        AND p.availabilityStatus = 'OCCUPIED'
+        """)
+    long countOccupiedByOwnerId(@Param("ownerId") Long ownerId);
 
-    long countByManagerIdAndAvailabilityStatus(
-            Long managerId,
-            AvailabilityStatus status
-    );
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.manager.id = :managerId")
+    long countByManagerId(@Param("managerId") Long managerId);
+
+    @Query("""
+        SELECT COUNT(p)
+        FROM Property p
+        WHERE p.manager.id = :managerId
+        AND p.availabilityStatus = 'OCCUPIED'
+        """)
+    long countOccupiedByManagerId(@Param("managerId") Long managerId);
 
     // ==================================================
     // CITY LIST
     // ==================================================
 
-    @Query("""
-        SELECT DISTINCT p.city
-        FROM Property p
-        ORDER BY p.city
-        """)
+    @Query("SELECT DISTINCT p.city FROM Property p ORDER BY p.city")
     List<String> findAllCities();
 }
